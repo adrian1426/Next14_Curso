@@ -1,3 +1,4 @@
+import { Metadata } from "next";
 import { PokemonById } from "../../pokemons/interfaces/pokemoInterface";
 
 interface PokemonPageProps {
@@ -7,17 +8,27 @@ interface PokemonPageProps {
 const getPokemonById = async (id: string): Promise<PokemonById> => {
   const pokemonUrl = `https://pokeapi.co/api/v2/pokemon/${id}`;
 
-  const response = await fetch(pokemonUrl, { cache: 'force-cache' });
+  const response = await fetch(
+    pokemonUrl,
+    {
+      cache: 'force-cache',
+      next: {
+        revalidate: 60 * 60 * 30 * 6
+      }
+    }
+  );
   const pokemon = await response.json();
-
-  console.log(pokemon.name)
 
   return pokemon;
 };
 
-export const metadata = {
-  title: "Pokemon by id",
-  description: "description"
+export async function generateMetadata({ params }: PokemonPageProps): Promise<Metadata> {
+  const { id, name } = await getPokemonById(params.id);
+
+  return {
+    title: `${id} - ${name}`,
+    description: `Página del pokemon ${name}`
+  }
 }
 
 export default async function PokemonPage(props: PokemonPageProps) {
@@ -27,10 +38,6 @@ export default async function PokemonPage(props: PokemonPageProps) {
   return (
     <div>
       <h1>pokemon: {props.params.id}</h1>
-      <hr />
-      {
-        JSON.stringify(pokemon)
-      }
     </div>
   );
 }
