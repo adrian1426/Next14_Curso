@@ -1,36 +1,12 @@
 import { Metadata } from "next";
-import { PokemonById } from "../../pokemons/interfaces/pokemoInterface";
+import { PokemonById, PokemonResponse } from "../../pokemons/interfaces/pokemoInterface";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 
-interface PokemonPageProps {
-  params: { id: string }
-}
-
-const getPokemonById = async (id: string): Promise<PokemonById> => {
-  try {
-    const pokemonUrl = `https://pokeapi.co/api/v2/pokemon/${id}`;
-
-    const response = await fetch(
-      pokemonUrl,
-      {
-        cache: 'force-cache',
-        next: {
-          revalidate: 60 * 60 * 30 * 6
-        }
-      }
-    );
-    const pokemon = await response.json();
-
-    return pokemon;
-  } catch (error) {
-    notFound();
-  }
-};
-
+//Next use
 export async function generateMetadata({ params }: PokemonPageProps): Promise<Metadata> {
   try {
-    const { id, name } = await getPokemonById(params.id);
+    const { id, name } = await getPokemonByName(params.name);
 
     return {
       title: `${id} - ${name}`,
@@ -44,9 +20,42 @@ export async function generateMetadata({ params }: PokemonPageProps): Promise<Me
   }
 }
 
+export async function generateStaticParams() {
+  const response = await fetch(`https://pokeapi.co/api/v2/pokemon?limit=${151}`);
+  const data: PokemonResponse = await response.json();
+
+  return data.results.map((pokemon) => ({ name: pokemon.name }));
+}
+//Next use
+
+interface PokemonPageProps {
+  params: { name: string }
+}
+
+const getPokemonByName = async (name: string): Promise<PokemonById> => {
+  try {
+    const pokemonUrl = `https://pokeapi.co/api/v2/pokemon/${name}`;
+
+    const response = await fetch(
+      pokemonUrl,
+      {
+        // cache: 'force-cache',
+        next: {
+          revalidate: 60 * 60 * 30 * 6
+        }
+      }
+    );
+    const pokemon = await response.json();
+
+    return pokemon;
+  } catch (error) {
+    notFound();
+  }
+};
+
 export default async function PokemonPage({ params }: PokemonPageProps) {
 
-  const pokemon = await getPokemonById(params.id);
+  const pokemon = await getPokemonByName(params.name);
 
 
   return (
